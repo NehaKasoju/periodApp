@@ -418,3 +418,86 @@ footer p {
 .symptom-bar-chart, .symptom-bar-row, .symptom-bar, .symptom-bar.active {
     display: none !important;
 }
+
+.forgot-link {
+    text-align: right;
+    width: 100%;
+    margin-top: 4px;
+}
+.forgot-link a {
+    color: var(--accent-color);
+    font-size: 0.98em;
+    text-decoration: underline;
+    cursor: pointer;
+}
+.forgot-modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(189,160,217,0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+.forgot-form {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(60,136,131,0.13);
+    padding: 28px 24px 18px 24px;
+    min-width: 270px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+    margin: 0 8px;
+}
+.forgot-form h3 {
+    color: var(--accent-color);
+    margin-bottom: 8px;
+    font-size: 1.2em;
+}
+.forgot-form label {
+    color: #333;
+    font-size: 1em;
+    margin-bottom: 2px;
+}
+.forgot-form input {
+    padding: 7px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    margin-top: 2px;
+    font-size: 1em;
+}
+.forgot-form button {
+    background: var(--accent-color);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 0;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+}
+.forgot-msg {
+    color: #c00;
+    font-size: 0.97em;
+    min-height: 1.2em;
+    margin-top: 2px;
+}
+#reset-email-info {
+    color: var(--primary-color);
+    font-size: 0.98em;
+    margin-bottom: 6px;
+}
+.close-modal {
+    background: var(--highlight-color);
+    color: var(--accent-color);
+    border: none;
+    border-radius: 8px;
+    padding: 6px 18px;
+    font-weight: 600;
+    cursor: pointer;
+    margin: 12px auto 0 auto;
+    display: block;
+    font-size: 1em;
+}

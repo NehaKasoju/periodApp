@@ -28,6 +28,7 @@
                     <input type="password" id="login-password" placeholder="Password" required>
                     <button type="submit">Login</button>
                     <div class="auth-msg" id="login-msg"></div>
+                    <div class="forgot-link"><a href="#" id="forgot-password-link">Forgot Password?</a></div>
                 </form>
                 <form id="signup-form" class="auth-form hidden">
                     <input type="text" id="signup-username" placeholder="Username" required>
@@ -37,6 +38,21 @@
                     <div class="auth-msg" id="signup-msg"></div>
                 </form>
             </section>
+            <div id="forgot-password-modal" class="forgot-modal hidden">
+                <form id="forgot-password-form" class="forgot-form">
+                    <h3>Reset Password</h3>
+                    <label>Username: <input type="text" id="forgot-username" required></label>
+                    <button type="submit">Send Reset Email</button>
+                    <div class="forgot-msg" id="forgot-msg"></div>
+                </form>
+                <form id="reset-password-form" class="forgot-form hidden">
+                    <div id="reset-email-info"></div>
+                    <label>New Password: <input type="password" id="reset-password" required></label>
+                    <button type="submit">Set New Password</button>
+                    <div class="forgot-msg" id="reset-msg"></div>
+                </form>
+                <button id="close-forgot-modal" class="close-modal">Close</button>
+            </div>
             <!-- App Section (hidden until logged in) -->
             <section id="app-section" class="hidden">
                 <div class="user-bar">
@@ -331,6 +347,58 @@ document.getElementById('ai-analyze-btn').onclick = () => {
     } else {
         responseDiv.innerHTML = 'No major PCOD/PCOS indicators detected in your description.';
     }
+};
+// --- Forgot Password Logic ---
+const forgotPasswordLink = document.getElementById('forgot-password-link');
+const forgotPasswordModal = document.getElementById('forgot-password-modal');
+const closeForgotModal = document.getElementById('close-forgot-modal');
+const forgotPasswordForm = document.getElementById('forgot-password-form');
+const resetPasswordForm = document.getElementById('reset-password-form');
+const forgotMsg = document.getElementById('forgot-msg');
+const resetMsg = document.getElementById('reset-msg');
+const resetEmailInfo = document.getElementById('reset-email-info');
+
+forgotPasswordLink.onclick = (e) => {
+    e.preventDefault();
+    forgotPasswordModal.classList.remove('hidden');
+    forgotPasswordForm.classList.remove('hidden');
+    resetPasswordForm.classList.add('hidden');
+    forgotMsg.textContent = '';
+    resetMsg.textContent = '';
+    forgotPasswordForm.reset();
+    resetPasswordForm.reset();
+};
+closeForgotModal.onclick = () => {
+    forgotPasswordModal.classList.add('hidden');
+};
+forgotPasswordForm.onsubmit = (e) => {
+    e.preventDefault();
+    const username = document.getElementById('forgot-username').value.trim();
+    const users = getUsers();
+    if (!users[username]) {
+        forgotMsg.textContent = 'Username not found.';
+        return;
+    }
+    // Simulate sending email
+    forgotPasswordForm.classList.add('hidden');
+    resetPasswordForm.classList.remove('hidden');
+    resetEmailInfo.innerHTML = `A reset link was sent to <b>${users[username].email}</b> (simulated).`;
+};
+resetPasswordForm.onsubmit = (e) => {
+    e.preventDefault();
+    const username = document.getElementById('forgot-username').value.trim();
+    const newPassword = document.getElementById('reset-password').value;
+    let users = getUsers();
+    if (!users[username]) {
+        resetMsg.textContent = 'Username not found.';
+        return;
+    }
+    users[username].password = newPassword;
+    setUsers(users);
+    resetMsg.textContent = 'Password reset! You can now log in.';
+    setTimeout(() => {
+        forgotPasswordModal.classList.add('hidden');
+    }, 1500);
 };
     </script>
 </body>
