@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Menstrual Health Tracker</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="style.css">
     <!-- Google Fonts (Poppins) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,43 +15,253 @@
         <header>
             <h1>Menstrual Health Tracker 🌸</h1>
         </header>
-
-        <main>
-            <section class="calendar-section">
-                <h2>Your Cycle</h2>
-                <div class="calendar-placeholder">[Calendar will go here]</div>
-            </section>
-
-            <section class="symptom-section">
-                <h2>Log Your Symptoms</h2>
-                <form class="symptom-form">
-                    <label>Cramps:
-                        <input type="checkbox">
-                    </label>
-                    <label>Mood swings:
-                        <input type="checkbox">
-                    </label>
-                    <label>Acne:
-                        <input type="checkbox">
-                    </label>
-                    <label>Fatigue:
-                        <input type="checkbox">
-                    </label>
-                    <button type="submit">Save Symptoms</button>
+        <main id="main-content">
+            <!-- Auth Section -->
+            <section id="auth-section">
+                <div id="auth-tabs">
+                    <button id="login-tab" class="active">Login</button>
+                    <button id="signup-tab">Sign Up</button>
+                </div>
+                <form id="login-form" class="auth-form">
+                    <input type="text" id="login-username" placeholder="Username" required>
+                    <input type="password" id="login-password" placeholder="Password" required>
+                    <button type="submit">Login</button>
+                    <div class="auth-msg" id="login-msg"></div>
+                </form>
+                <form id="signup-form" class="auth-form hidden">
+                    <input type="text" id="signup-username" placeholder="Username" required>
+                    <input type="password" id="signup-password" placeholder="Password" required>
+                    <button type="submit">Sign Up</button>
+                    <div class="auth-msg" id="signup-msg"></div>
                 </form>
             </section>
-
-            <section class="ai-section">
-                <h2>AI Symptom Checker (PCOD/PCOS)</h2>
-                <textarea placeholder="Describe your symptoms..."></textarea>
-                <button>Analyze</button>
-                <div class="ai-response">[AI Response appears here]</div>
+            <!-- App Section (hidden until logged in) -->
+            <section id="app-section" class="hidden">
+                <div class="user-bar">
+                    <span id="user-greeting"></span>
+                    <button id="logout-btn">Logout</button>
+                </div>
+                <section class="calendar-section">
+                    <h2>Your Cycle</h2>
+                    <div id="calendar"></div>
+                </section>
+                <section class="symptom-section">
+                    <h2>Log Your Symptoms</h2>
+                    <form id="symptom-form" class="symptom-form">
+                        <label><input type="checkbox" name="cramps"> Cramps</label>
+                        <label><input type="checkbox" name="mood"> Mood Swings</label>
+                        <label><input type="checkbox" name="acne"> Acne</label>
+                        <label><input type="checkbox" name="fatigue"> Fatigue</label>
+                        <label><input type="checkbox" name="weight"> Weight Change</label>
+                        <label><input type="checkbox" name="irregular"> Irregular Bleeding</label>
+                        <button type="submit">Save Symptoms</button>
+                    </form>
+                </section>
+                <section class="dashboard-section">
+                    <h2>Dashboard</h2>
+                    <div id="cycle-summary"></div>
+                    <div id="symptom-chart"></div>
+                </section>
+                <section class="ai-section">
+                    <h2>AI Symptom Checker (PCOD/PCOS)</h2>
+                    <textarea id="ai-input" placeholder="Describe your symptoms..."></textarea>
+                    <button id="ai-analyze-btn">Analyze</button>
+                    <div class="ai-response" id="ai-response">[AI Response appears here]</div>
+                </section>
             </section>
         </main>
-
         <footer>
             <p>&copy; 2025 Menstrual Health Tracker. Stay healthy!</p>
         </footer>
     </div>
+    <script>
+// --- User Auth & State ---
+const authSection = document.getElementById('auth-section');
+const appSection = document.getElementById('app-section');
+const loginTab = document.getElementById('login-tab');
+const signupTab = document.getElementById('signup-tab');
+const loginForm = document.getElementById('login-form');
+const signupForm = document.getElementById('signup-form');
+const loginMsg = document.getElementById('login-msg');
+const signupMsg = document.getElementById('signup-msg');
+const userGreeting = document.getElementById('user-greeting');
+const logoutBtn = document.getElementById('logout-btn');
+let currentUser = null;
+
+function getUsers() {
+    return JSON.parse(localStorage.getItem('users') || '{}');
+}
+function setUsers(users) {
+    localStorage.setItem('users', JSON.stringify(users));
+}
+function saveUserData(username, data) {
+    localStorage.setItem('user_' + username, JSON.stringify(data));
+}
+function getUserData(username) {
+    return JSON.parse(localStorage.getItem('user_' + username) || '{}');
+}
+function showApp(username) {
+    currentUser = username;
+    authSection.classList.add('hidden');
+    appSection.classList.remove('hidden');
+    userGreeting.textContent = `Hello, ${username}!`;
+    renderCalendar();
+    renderDashboard();
+}
+function logout() {
+    currentUser = null;
+    authSection.classList.remove('hidden');
+    appSection.classList.add('hidden');
+}
+loginTab.onclick = () => {
+    loginTab.classList.add('active');
+    signupTab.classList.remove('active');
+    loginForm.classList.remove('hidden');
+    signupForm.classList.add('hidden');
+};
+signupTab.onclick = () => {
+    signupTab.classList.add('active');
+    loginTab.classList.remove('active');
+    signupForm.classList.remove('hidden');
+    loginForm.classList.add('hidden');
+};
+loginForm.onsubmit = e => {
+    e.preventDefault();
+    const username = loginForm[0].value.trim();
+    const password = loginForm[1].value;
+    const users = getUsers();
+    if (users[username] && users[username] === password) {
+        loginMsg.textContent = '';
+        showApp(username);
+    } else {
+        loginMsg.textContent = 'Invalid username or password.';
+    }
+};
+signupForm.onsubmit = e => {
+    e.preventDefault();
+    const username = signupForm[0].value.trim();
+    const password = signupForm[1].value;
+    let users = getUsers();
+    if (users[username]) {
+        signupMsg.textContent = 'Username already exists.';
+        return;
+    }
+    users[username] = password;
+    setUsers(users);
+    saveUserData(username, { periods: [], symptoms: {} });
+    signupMsg.textContent = 'Account created! Please log in.';
+};
+logoutBtn.onclick = logout;
+// Auto-login if session exists (for demo, not secure)
+window.onload = () => {
+    if (currentUser) showApp(currentUser);
+};
+// --- Calendar & Logging ---
+const calendarDiv = document.getElementById('calendar');
+const symptomForm = document.getElementById('symptom-form');
+function getToday() {
+    const d = new Date();
+    return d.toISOString().slice(0, 10);
+}
+function renderCalendar() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const userData = getUserData(currentUser);
+    let html = `<div class='calendar-grid'><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>`;
+    for (let i = 0; i < firstDay.getDay(); i++) html += `<div></div>`;
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const isPeriod = userData.periods && userData.periods.includes(dateStr);
+        html += `<div class='calendar-day${isPeriod ? ' period-day' : ''}' data-date='${dateStr}'>${d}</div>`;
+    }
+    html += `</div>`;
+    html += `<button id='log-period-btn'>Log Today as Period Day</button>`;
+    calendarDiv.innerHTML = html;
+    document.getElementById('log-period-btn').onclick = () => {
+        const userData = getUserData(currentUser);
+        if (!userData.periods) userData.periods = [];
+        const today = getToday();
+        if (!userData.periods.includes(today)) userData.periods.push(today);
+        saveUserData(currentUser, userData);
+        renderCalendar();
+        renderDashboard();
+    };
+}
+symptomForm.onsubmit = e => {
+    e.preventDefault();
+    const formData = new FormData(symptomForm);
+    const symptoms = {};
+    for (let [k, v] of formData.entries()) symptoms[k] = true;
+    const userData = getUserData(currentUser);
+    const today = getToday();
+    if (!userData.symptoms) userData.symptoms = {};
+    userData.symptoms[today] = symptoms;
+    saveUserData(currentUser, userData);
+    renderDashboard();
+    symptomForm.reset();
+};
+// --- Dashboard & Charts ---
+const cycleSummaryDiv = document.getElementById('cycle-summary');
+const symptomChartDiv = document.getElementById('symptom-chart');
+function renderDashboard() {
+    const userData = getUserData(currentUser);
+    // Cycle summary
+    const periods = userData.periods || [];
+    let lastPeriod = periods[periods.length-1];
+    let nextPeriod = '';
+    if (periods.length > 1) {
+        const diffs = periods.slice(1).map((d,i)=>{
+            return (new Date(periods[i+1]) - new Date(periods[i]))/86400000;
+        });
+        const avg = Math.round(diffs.reduce((a,b)=>a+b,0)/diffs.length);
+        if (lastPeriod) {
+            const next = new Date(lastPeriod);
+            next.setDate(next.getDate() + avg);
+            nextPeriod = next.toISOString().slice(0,10);
+        }
+        cycleSummaryDiv.innerHTML = `<div><b>Last Period:</b> ${lastPeriod||'-'}</div><div><b>Avg. Cycle Length:</b> ${avg} days</div><div><b>Next Predicted:</b> ${nextPeriod||'-'}</div>`;
+    } else {
+        cycleSummaryDiv.innerHTML = `<div>Log at least 2 periods for predictions.</div>`;
+    }
+    // Symptom chart (last 14 days)
+    const symptoms = userData.symptoms || {};
+    let days = [];
+    for (let i=13; i>=0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate()-i);
+        const ds = d.toISOString().slice(0,10);
+        days.push(ds);
+    }
+    const symptomTypes = ['cramps','mood','acne','fatigue','weight','irregular'];
+    let chartHtml = `<div class='symptom-bar-chart'>`;
+    for (let s of symptomTypes) {
+        chartHtml += `<div class='symptom-bar-row'><span>${s}</span>`;
+        for (let d of days) {
+            chartHtml += `<span class='symptom-bar${symptoms[d]&&symptoms[d][s]?' active':''}' title='${d}'></span>`;
+        }
+        chartHtml += `</div>`;
+    }
+    chartHtml += `</div>`;
+    symptomChartDiv.innerHTML = chartHtml;
+}
+// --- AI Symptom Checker (Demo) ---
+document.getElementById('ai-analyze-btn').onclick = () => {
+    const input = document.getElementById('ai-input').value;
+    const responseDiv = document.getElementById('ai-response');
+    // Demo: simple keyword check for PCOD/PCOS
+    const keywords = ['irregular','weight','acne','hair','cycle','missed','late','pain','fatigue'];
+    let found = keywords.filter(k=>input.toLowerCase().includes(k));
+    if (found.length>=3) {
+        responseDiv.textContent = '⚠️ Your symptoms may be consistent with PCOD/PCOS. Please consult a healthcare provider for a full evaluation.';
+    } else if (found.length>0) {
+        responseDiv.textContent = 'Some symptoms noted. If you have concerns about PCOD/PCOS, consider tracking your symptoms and consulting a doctor.';
+    } else {
+        responseDiv.textContent = 'No major PCOD/PCOS indicators detected in your description.';
+    }
+};
+    </script>
 </body>
 </html>
