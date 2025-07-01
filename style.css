@@ -405,3 +405,16 @@ footer p {
         width: 40px;
     }
 }
+
+.predicted-day {
+    background: #3C8883 !important;
+    color: #fff !important;
+    font-weight: 700;
+    border: 2px solid #3C8883 !important;
+    box-shadow: 0 0 0 2px #fff;
+}
+
+/* Remove symptom bar chart styles */
+.symptom-bar-chart, .symptom-bar-row, .symptom-bar, .symptom-bar.active {
+    display: none !important;
+}

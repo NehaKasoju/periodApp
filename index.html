@@ -84,9 +84,8 @@
                     <div class="symptom-help">Select all symptoms you experienced today and save.</div>
                 </section>
                 <section class="dashboard-section">
-                    <h2>Dashboard</h2>
+                    <h2>Cycle Summary</h2>
                     <div id="cycle-summary"></div>
-                    <div id="symptom-chart"></div>
                 </section>
                 <section class="ai-section">
                     <h2>AI Symptom Checker <span class="ai-badge">PCOD/PCOS</span></h2>
@@ -219,12 +218,33 @@ function renderCalendar() {
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const userData = getUserData(currentUser);
+    // Calculate predicted period dates for next 3 months
+    let predictedDates = [];
+    const periods = userData.periods || [];
+    if (periods.length > 1) {
+        const diffs = periods.slice(1).map((d,i)=>{
+            return (new Date(periods[i+1]) - new Date(periods[i]))/86400000;
+        });
+        const avg = Math.round(diffs.reduce((a,b)=>a+b,0)/diffs.length);
+        let last = new Date(periods[periods.length-1]);
+        for (let m = 0; m < 3; m++) {
+            last = new Date(last);
+            last.setDate(last.getDate() + avg);
+            // Predict 5 days for each period
+            for (let i = 0; i < 5; i++) {
+                let pred = new Date(last);
+                pred.setDate(pred.getDate() + i);
+                predictedDates.push(pred.toISOString().slice(0,10));
+            }
+        }
+    }
     let html = `<div class='calendar-grid'><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>`;
     for (let i = 0; i < firstDay.getDay(); i++) html += `<div></div>`;
     for (let d = 1; d <= lastDay.getDate(); d++) {
         const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
         const isPeriod = userData.periods && userData.periods.includes(dateStr);
-        html += `<div class='calendar-day${isPeriod ? ' period-day' : ''}' data-date='${dateStr}'>${d}</div>`;
+        const isPredicted = predictedDates.includes(dateStr);
+        html += `<div class='calendar-day${isPeriod ? ' period-day' : ''}${isPredicted ? ' predicted-day' : ''}' data-date='${dateStr}'>${d}</div>`;
     }
     html += `</div>`;
     calendarDiv.innerHTML = html;
@@ -262,7 +282,6 @@ symptomForm.onsubmit = e => {
 };
 // --- Dashboard & Charts ---
 const cycleSummaryDiv = document.getElementById('cycle-summary');
-const symptomChartDiv = document.getElementById('symptom-chart');
 function renderDashboard() {
     const userData = getUserData(currentUser);
     // Cycle summary
@@ -283,28 +302,6 @@ function renderDashboard() {
     } else {
         cycleSummaryDiv.innerHTML = `<div>Log at least 2 periods for predictions.</div>`;
     }
-    // Symptom chart (last 14 days)
-    const symptoms = userData.symptoms || {};
-    let days = [];
-    for (let i=13; i>=0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate()-i);
-        const ds = d.toISOString().slice(0,10);
-        days.push(ds);
-    }
-    const symptomTypes = [
-        'cramps','mood','acne','fatigue','weight','irregular','bloating','headache','breast','sleep','appetite','nausea','diarrhea','constipation','backpain','anxiety','depression','cravings','dizziness','hotflashes','nightsweats'
-    ];
-    let chartHtml = `<div class='symptom-bar-chart'>`;
-    for (let s of symptomTypes) {
-        chartHtml += `<div class='symptom-bar-row'><span>${s}</span>`;
-        for (let d of days) {
-            chartHtml += `<span class='symptom-bar${symptoms[d]&&symptoms[d][s]?' active':''}' title='${d}'></span>`;
-        }
-        chartHtml += `</div>`;
-    }
-    chartHtml += `</div>`;
-    symptomChartDiv.innerHTML = chartHtml;
 }
 // --- AI Symptom Checker (Robust) ---
 document.getElementById('ai-analyze-btn').onclick = () => {
