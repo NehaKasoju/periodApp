@@ -28,7 +28,6 @@
                     <input type="password" id="login-password" placeholder="Password" required>
                     <button type="submit">Login</button>
                     <div class="auth-msg" id="login-msg"></div>
-                    <div class="forgot-link"><a href="#" id="forgot-password-link">Forgot Password?</a></div>
                 </form>
                 <form id="signup-form" class="auth-form hidden">
                     <input type="text" id="signup-username" placeholder="Username" required>
@@ -38,21 +37,6 @@
                     <div class="auth-msg" id="signup-msg"></div>
                 </form>
             </section>
-            <div id="forgot-password-modal" class="forgot-modal hidden">
-                <form id="forgot-password-form" class="forgot-form">
-                    <h3>Reset Password</h3>
-                    <label>Username: <input type="text" id="forgot-username" required></label>
-                    <button type="submit">Send Reset Email</button>
-                    <div class="forgot-msg" id="forgot-msg"></div>
-                </form>
-                <form id="reset-password-form" class="forgot-form hidden">
-                    <div id="reset-email-info"></div>
-                    <label>New Password: <input type="password" id="reset-password" required></label>
-                    <button type="submit">Set New Password</button>
-                    <div class="forgot-msg" id="reset-msg"></div>
-                </form>
-                <button id="close-forgot-modal" class="close-modal">Close</button>
-            </div>
             <!-- App Section (hidden until logged in) -->
             <section id="app-section" class="hidden">
                 <div class="user-bar">
@@ -100,8 +84,9 @@
                     <div class="symptom-help">Select all symptoms you experienced today and save.</div>
                 </section>
                 <section class="dashboard-section">
-                    <h2>Cycle Summary</h2>
+                    <h2>Dashboard</h2>
                     <div id="cycle-summary"></div>
+                    <div id="symptom-chart"></div>
                 </section>
                 <section class="ai-section">
                     <h2>AI Symptom Checker <span class="ai-badge">PCOD/PCOS</span></h2>
@@ -117,21 +102,19 @@
         </footer>
     </div>
     <script>
-// --- User Auth & State (Backend) ---
-const API_URL = 'http://localhost:5000/api'; // Change if backend is deployed elsewhere
-
-const authSection = document.getElementById('auth-section');
-const appSection = document.getElementById('app-section');
-const loginTab = document.getElementById('login-tab');
-const signupTab = document.getElementById('signup-tab');
-const loginForm = document.getElementById('login-form');
-const signupForm = document.getElementById('signup-form');
-const loginMsg = document.getElementById('login-msg');
-const signupMsg = document.getElementById('signup-msg');
-const userGreeting = document.getElementById('user-greeting');
-const logoutBtn = document.getElementById('logout-btn');
-let currentUser = null;
-
+// --- User Auth & State (LocalStorage) ---
+function getUsers() {
+    return JSON.parse(localStorage.getItem('users') || '{}');
+}
+function setUsers(users) {
+    localStorage.setItem('users', JSON.stringify(users));
+}
+function saveUserData(username, data) {
+    localStorage.setItem('user_' + username, JSON.stringify(data));
+}
+function getUserData(username) {
+    return JSON.parse(localStorage.getItem('user_' + username) || '{}');
+}
 function showApp(username) {
     currentUser = username;
     authSection.classList.add('hidden');
@@ -145,6 +128,17 @@ function logout() {
     authSection.classList.remove('hidden');
     appSection.classList.add('hidden');
 }
+const authSection = document.getElementById('auth-section');
+const appSection = document.getElementById('app-section');
+const loginTab = document.getElementById('login-tab');
+const signupTab = document.getElementById('signup-tab');
+const loginForm = document.getElementById('login-form');
+const signupForm = document.getElementById('signup-form');
+const loginMsg = document.getElementById('login-msg');
+const signupMsg = document.getElementById('signup-msg');
+const userGreeting = document.getElementById('user-greeting');
+const logoutBtn = document.getElementById('logout-btn');
+let currentUser = null;
 loginTab.onclick = () => {
     loginTab.classList.add('active');
     signupTab.classList.remove('active');
@@ -157,46 +151,37 @@ signupTab.onclick = () => {
     signupForm.classList.remove('hidden');
     loginForm.classList.add('hidden');
 };
-loginForm.onsubmit = async e => {
+loginForm.onsubmit = e => {
     e.preventDefault();
     const username = loginForm[0].value.trim();
     const password = loginForm[1].value;
-    loginMsg.textContent = 'Logging in...';
-    try {
-        const res = await fetch(`${API_URL}/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Login failed');
+    const users = getUsers();
+    if (users[username] && users[username].password === password) {
         loginMsg.textContent = '';
-        // Store JWT and user info in memory (or sessionStorage/localStorage if you want persistent login)
-        window._jwt = data.token;
-        window._user = { username: data.username, email: data.email };
-        showApp(data.username);
-    } catch (err) {
-        loginMsg.textContent = err.message;
+        showApp(username);
+    } else {
+        loginMsg.textContent = 'Invalid username or password.';
     }
 };
-signupForm.onsubmit = async e => {
+signupForm.onsubmit = e => {
     e.preventDefault();
     const username = signupForm[0].value.trim();
     const email = signupForm[1].value.trim();
     const password = signupForm[2].value;
-    signupMsg.textContent = 'Registering...';
-    try {
-        const res = await fetch(`${API_URL}/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, email, password })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Registration failed');
-        signupMsg.textContent = 'Account created! Please log in.';
-    } catch (err) {
-        signupMsg.textContent = err.message;
+    let users = getUsers();
+    if (users[username]) {
+        signupMsg.textContent = 'Username already exists.';
+        return;
     }
+    // Email validation
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+        signupMsg.textContent = 'Please enter a valid email address.';
+        return;
+    }
+    users[username] = { password, email };
+    setUsers(users);
+    saveUserData(username, { periods: [], symptoms: {} });
+    signupMsg.textContent = 'Account created! Please log in.';
 };
 logoutBtn.onclick = logout;
 window.onload = () => {
@@ -233,33 +218,12 @@ function renderCalendar() {
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const userData = getUserData(currentUser);
-    // Calculate predicted period dates for next 3 months
-    let predictedDates = [];
-    const periods = userData.periods || [];
-    if (periods.length > 1) {
-        const diffs = periods.slice(1).map((d,i)=>{
-            return (new Date(periods[i+1]) - new Date(periods[i]))/86400000;
-        });
-        const avg = Math.round(diffs.reduce((a,b)=>a+b,0)/diffs.length);
-        let last = new Date(periods[periods.length-1]);
-        for (let m = 0; m < 3; m++) {
-            last = new Date(last);
-            last.setDate(last.getDate() + avg);
-            // Predict 5 days for each period
-            for (let i = 0; i < 5; i++) {
-                let pred = new Date(last);
-                pred.setDate(pred.getDate() + i);
-                predictedDates.push(pred.toISOString().slice(0,10));
-            }
-        }
-    }
     let html = `<div class='calendar-grid'><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>`;
     for (let i = 0; i < firstDay.getDay(); i++) html += `<div></div>`;
     for (let d = 1; d <= lastDay.getDate(); d++) {
         const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
         const isPeriod = userData.periods && userData.periods.includes(dateStr);
-        const isPredicted = predictedDates.includes(dateStr);
-        html += `<div class='calendar-day${isPeriod ? ' period-day' : ''}${isPredicted ? ' predicted-day' : ''}' data-date='${dateStr}'>${d}</div>`;
+        html += `<div class='calendar-day${isPeriod ? ' period-day' : ''}' data-date='${dateStr}'>${d}</div>`;
     }
     html += `</div>`;
     calendarDiv.innerHTML = html;
@@ -297,6 +261,7 @@ symptomForm.onsubmit = e => {
 };
 // --- Dashboard & Charts ---
 const cycleSummaryDiv = document.getElementById('cycle-summary');
+const symptomChartDiv = document.getElementById('symptom-chart');
 function renderDashboard() {
     const userData = getUserData(currentUser);
     // Cycle summary
@@ -317,6 +282,28 @@ function renderDashboard() {
     } else {
         cycleSummaryDiv.innerHTML = `<div>Log at least 2 periods for predictions.</div>`;
     }
+    // Symptom chart (last 14 days)
+    const symptoms = userData.symptoms || {};
+    let days = [];
+    for (let i=13; i>=0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate()-i);
+        const ds = d.toISOString().slice(0,10);
+        days.push(ds);
+    }
+    const symptomTypes = [
+        'cramps','mood','acne','fatigue','weight','irregular','bloating','headache','breast','sleep','appetite','nausea','diarrhea','constipation','backpain','anxiety','depression','cravings','dizziness','hotflashes','nightsweats'
+    ];
+    let chartHtml = `<div class='symptom-bar-chart'>`;
+    for (let s of symptomTypes) {
+        chartHtml += `<div class='symptom-bar-row'><span>${s}</span>`;
+        for (let d of days) {
+            chartHtml += `<span class='symptom-bar${symptoms[d]&&symptoms[d][s]?' active':''}' title='${d}'></span>`;
+        }
+        chartHtml += `</div>`;
+    }
+    chartHtml += `</div>`;
+    symptomChartDiv.innerHTML = chartHtml;
 }
 // --- AI Symptom Checker (Robust) ---
 document.getElementById('ai-analyze-btn').onclick = () => {
@@ -345,73 +332,6 @@ document.getElementById('ai-analyze-btn').onclick = () => {
         responseDiv.innerHTML = 'Some symptoms noted. If you have concerns about PCOD/PCOS, consider tracking your symptoms and consulting a doctor.';
     } else {
         responseDiv.innerHTML = 'No major PCOD/PCOS indicators detected in your description.';
-    }
-};
-// --- Forgot Password Logic (Backend) ---
-const forgotPasswordLink = document.getElementById('forgot-password-link');
-const forgotPasswordModal = document.getElementById('forgot-password-modal');
-const closeForgotModal = document.getElementById('close-forgot-modal');
-const forgotPasswordForm = document.getElementById('forgot-password-form');
-const resetPasswordForm = document.getElementById('reset-password-form');
-const forgotMsg = document.getElementById('forgot-msg');
-const resetMsg = document.getElementById('reset-msg');
-const resetEmailInfo = document.getElementById('reset-email-info');
-
-forgotPasswordLink.onclick = (e) => {
-    e.preventDefault();
-    forgotPasswordModal.classList.remove('hidden');
-    forgotPasswordForm.classList.remove('hidden');
-    resetPasswordForm.classList.add('hidden');
-    forgotMsg.textContent = '';
-    resetMsg.textContent = '';
-    forgotPasswordForm.reset();
-    resetPasswordForm.reset();
-};
-closeForgotModal.onclick = () => {
-    forgotPasswordModal.classList.add('hidden');
-};
-forgotPasswordForm.onsubmit = async (e) => {
-    e.preventDefault();
-    const username = document.getElementById('forgot-username').value.trim();
-    forgotMsg.textContent = 'Sending reset email...';
-    try {
-        const res = await fetch(`${API_URL}/forgot-password`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to send reset email');
-        forgotPasswordForm.classList.add('hidden');
-        resetPasswordForm.classList.remove('hidden');
-        resetEmailInfo.innerHTML = `A reset link was sent to the email on file (check your inbox).`;
-    } catch (err) {
-        forgotMsg.textContent = err.message;
-    }
-};
-resetPasswordForm.onsubmit = async (e) => {
-    e.preventDefault();
-    const username = document.getElementById('forgot-username').value.trim();
-    const newPassword = document.getElementById('reset-password').value;
-    resetMsg.textContent = 'Resetting password...';
-    try {
-        // In a real flow, the user would click the link in their email and land on a reset page with the token
-        // For demo, we ask for the token (simulate by getting it from the backend or email)
-        const token = prompt('Enter the reset token you received in your email:');
-        if (!token) throw new Error('Reset token required.');
-        const res = await fetch(`${API_URL}/reset-password`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token, newPassword })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to reset password');
-        resetMsg.textContent = 'Password reset! You can now log in.';
-        setTimeout(() => {
-            forgotPasswordModal.classList.add('hidden');
-        }, 1500);
-    } catch (err) {
-        resetMsg.textContent = err.message;
     }
 };
     </script>
