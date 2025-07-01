@@ -117,7 +117,9 @@
         </footer>
     </div>
     <script>
-// --- User Auth & State ---
+// --- User Auth & State (Backend) ---
+const API_URL = 'http://localhost:5000/api'; // Change if backend is deployed elsewhere
+
 const authSection = document.getElementById('auth-section');
 const appSection = document.getElementById('app-section');
 const loginTab = document.getElementById('login-tab');
@@ -130,18 +132,6 @@ const userGreeting = document.getElementById('user-greeting');
 const logoutBtn = document.getElementById('logout-btn');
 let currentUser = null;
 
-function getUsers() {
-    return JSON.parse(localStorage.getItem('users') || '{}');
-}
-function setUsers(users) {
-    localStorage.setItem('users', JSON.stringify(users));
-}
-function saveUserData(username, data) {
-    localStorage.setItem('user_' + username, JSON.stringify(data));
-}
-function getUserData(username) {
-    return JSON.parse(localStorage.getItem('user_' + username) || '{}');
-}
 function showApp(username) {
     currentUser = username;
     authSection.classList.add('hidden');
@@ -167,37 +157,46 @@ signupTab.onclick = () => {
     signupForm.classList.remove('hidden');
     loginForm.classList.add('hidden');
 };
-loginForm.onsubmit = e => {
+loginForm.onsubmit = async e => {
     e.preventDefault();
     const username = loginForm[0].value.trim();
     const password = loginForm[1].value;
-    const users = getUsers();
-    if (users[username] && users[username].password === password) {
+    loginMsg.textContent = 'Logging in...';
+    try {
+        const res = await fetch(`${API_URL}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Login failed');
         loginMsg.textContent = '';
-        showApp(username);
-    } else {
-        loginMsg.textContent = 'Invalid username or password.';
+        // Store JWT and user info in memory (or sessionStorage/localStorage if you want persistent login)
+        window._jwt = data.token;
+        window._user = { username: data.username, email: data.email };
+        showApp(data.username);
+    } catch (err) {
+        loginMsg.textContent = err.message;
     }
 };
-signupForm.onsubmit = e => {
+signupForm.onsubmit = async e => {
     e.preventDefault();
     const username = signupForm[0].value.trim();
     const email = signupForm[1].value.trim();
     const password = signupForm[2].value;
-    let users = getUsers();
-    if (users[username]) {
-        signupMsg.textContent = 'Username already exists.';
-        return;
+    signupMsg.textContent = 'Registering...';
+    try {
+        const res = await fetch(`${API_URL}/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, email, password })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Registration failed');
+        signupMsg.textContent = 'Account created! Please log in.';
+    } catch (err) {
+        signupMsg.textContent = err.message;
     }
-    // Email validation
-    if (!/^\S+@\S+\.\S+$/.test(email)) {
-        signupMsg.textContent = 'Please enter a valid email address.';
-        return;
-    }
-    users[username] = { password, email };
-    setUsers(users);
-    saveUserData(username, { periods: [], symptoms: {} });
-    signupMsg.textContent = 'Account created! Please log in.';
 };
 logoutBtn.onclick = logout;
 window.onload = () => {
@@ -348,7 +347,7 @@ document.getElementById('ai-analyze-btn').onclick = () => {
         responseDiv.innerHTML = 'No major PCOD/PCOS indicators detected in your description.';
     }
 };
-// --- Forgot Password Logic ---
+// --- Forgot Password Logic (Backend) ---
 const forgotPasswordLink = document.getElementById('forgot-password-link');
 const forgotPasswordModal = document.getElementById('forgot-password-modal');
 const closeForgotModal = document.getElementById('close-forgot-modal');
@@ -371,34 +370,49 @@ forgotPasswordLink.onclick = (e) => {
 closeForgotModal.onclick = () => {
     forgotPasswordModal.classList.add('hidden');
 };
-forgotPasswordForm.onsubmit = (e) => {
+forgotPasswordForm.onsubmit = async (e) => {
     e.preventDefault();
     const username = document.getElementById('forgot-username').value.trim();
-    const users = getUsers();
-    if (!users[username]) {
-        forgotMsg.textContent = 'Username not found.';
-        return;
+    forgotMsg.textContent = 'Sending reset email...';
+    try {
+        const res = await fetch(`${API_URL}/forgot-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to send reset email');
+        forgotPasswordForm.classList.add('hidden');
+        resetPasswordForm.classList.remove('hidden');
+        resetEmailInfo.innerHTML = `A reset link was sent to the email on file (check your inbox).`;
+    } catch (err) {
+        forgotMsg.textContent = err.message;
     }
-    // Simulate sending email
-    forgotPasswordForm.classList.add('hidden');
-    resetPasswordForm.classList.remove('hidden');
-    resetEmailInfo.innerHTML = `A reset link was sent to <b>${users[username].email}</b> (simulated).`;
 };
-resetPasswordForm.onsubmit = (e) => {
+resetPasswordForm.onsubmit = async (e) => {
     e.preventDefault();
     const username = document.getElementById('forgot-username').value.trim();
     const newPassword = document.getElementById('reset-password').value;
-    let users = getUsers();
-    if (!users[username]) {
-        resetMsg.textContent = 'Username not found.';
-        return;
+    resetMsg.textContent = 'Resetting password...';
+    try {
+        // In a real flow, the user would click the link in their email and land on a reset page with the token
+        // For demo, we ask for the token (simulate by getting it from the backend or email)
+        const token = prompt('Enter the reset token you received in your email:');
+        if (!token) throw new Error('Reset token required.');
+        const res = await fetch(`${API_URL}/reset-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, newPassword })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to reset password');
+        resetMsg.textContent = 'Password reset! You can now log in.';
+        setTimeout(() => {
+            forgotPasswordModal.classList.add('hidden');
+        }, 1500);
+    } catch (err) {
+        resetMsg.textContent = err.message;
     }
-    users[username].password = newPassword;
-    setUsers(users);
-    resetMsg.textContent = 'Password reset! You can now log in.';
-    setTimeout(() => {
-        forgotPasswordModal.classList.add('hidden');
-    }, 1500);
 };
     </script>
 </body>
