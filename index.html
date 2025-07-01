@@ -14,6 +14,7 @@
     <div class="container">
         <header>
             <h1>Menstrual Health Tracker 🌸</h1>
+            <p class="subtitle">Your private, friendly space for cycle and symptom tracking</p>
         </header>
         <main id="main-content">
             <!-- Auth Section -->
@@ -30,6 +31,7 @@
                 </form>
                 <form id="signup-form" class="auth-form hidden">
                     <input type="text" id="signup-username" placeholder="Username" required>
+                    <input type="email" id="signup-email" placeholder="Email" required>
                     <input type="password" id="signup-password" placeholder="Password" required>
                     <button type="submit">Sign Up</button>
                     <div class="auth-msg" id="signup-msg"></div>
@@ -42,20 +44,44 @@
                     <button id="logout-btn">Logout</button>
                 </div>
                 <section class="calendar-section">
-                    <h2>Your Cycle</h2>
+                    <h2>Your Cycle Calendar</h2>
+                    <div class="calendar-controls">
+                        <button id="prev-month">&#8592; Prev</button>
+                        <span id="calendar-month-label"></span>
+                        <button id="next-month">Next &#8594;</button>
+                    </div>
                     <div id="calendar"></div>
+                    <div class="calendar-help">Click any date to mark/unmark it as a period day.</div>
                 </section>
                 <section class="symptom-section">
                     <h2>Log Your Symptoms</h2>
                     <form id="symptom-form" class="symptom-form">
-                        <label><input type="checkbox" name="cramps"> Cramps</label>
-                        <label><input type="checkbox" name="mood"> Mood Swings</label>
-                        <label><input type="checkbox" name="acne"> Acne</label>
-                        <label><input type="checkbox" name="fatigue"> Fatigue</label>
-                        <label><input type="checkbox" name="weight"> Weight Change</label>
-                        <label><input type="checkbox" name="irregular"> Irregular Bleeding</label>
-                        <button type="submit">Save Symptoms</button>
+                        <div class="symptom-grid">
+                            <label><input type="checkbox" name="cramps"> Cramps</label>
+                            <label><input type="checkbox" name="mood"> Mood Swings</label>
+                            <label><input type="checkbox" name="acne"> Acne</label>
+                            <label><input type="checkbox" name="fatigue"> Fatigue</label>
+                            <label><input type="checkbox" name="weight"> Weight Change</label>
+                            <label><input type="checkbox" name="irregular"> Irregular Bleeding</label>
+                            <label><input type="checkbox" name="bloating"> Bloating</label>
+                            <label><input type="checkbox" name="headache"> Headache</label>
+                            <label><input type="checkbox" name="breast"> Breast Tenderness</label>
+                            <label><input type="checkbox" name="sleep"> Sleep Issues</label>
+                            <label><input type="checkbox" name="appetite"> Appetite Changes</label>
+                            <label><input type="checkbox" name="nausea"> Nausea</label>
+                            <label><input type="checkbox" name="diarrhea"> Diarrhea</label>
+                            <label><input type="checkbox" name="constipation"> Constipation</label>
+                            <label><input type="checkbox" name="backpain"> Back Pain</label>
+                            <label><input type="checkbox" name="anxiety"> Anxiety</label>
+                            <label><input type="checkbox" name="depression"> Depression</label>
+                            <label><input type="checkbox" name="cravings"> Cravings</label>
+                            <label><input type="checkbox" name="dizziness"> Dizziness</label>
+                            <label><input type="checkbox" name="hotflashes"> Hot Flashes</label>
+                            <label><input type="checkbox" name="nightsweats"> Night Sweats</label>
+                        </div>
+                        <button type="submit">Save Today's Symptoms</button>
                     </form>
+                    <div class="symptom-help">Select all symptoms you experienced today and save.</div>
                 </section>
                 <section class="dashboard-section">
                     <h2>Dashboard</h2>
@@ -63,10 +89,11 @@
                     <div id="symptom-chart"></div>
                 </section>
                 <section class="ai-section">
-                    <h2>AI Symptom Checker (PCOD/PCOS)</h2>
-                    <textarea id="ai-input" placeholder="Describe your symptoms..."></textarea>
+                    <h2>AI Symptom Checker <span class="ai-badge">PCOD/PCOS</span></h2>
+                    <textarea id="ai-input" placeholder="Describe your symptoms or cycle concerns in your own words..."></textarea>
                     <button id="ai-analyze-btn">Analyze</button>
                     <div class="ai-response" id="ai-response">[AI Response appears here]</div>
+                    <div class="ai-help">Our AI checks for patterns and symptoms that may indicate PCOD/PCOS. This is not a diagnosis—please consult a healthcare provider for medical advice.</div>
                 </section>
             </section>
         </main>
@@ -130,7 +157,7 @@ loginForm.onsubmit = e => {
     const username = loginForm[0].value.trim();
     const password = loginForm[1].value;
     const users = getUsers();
-    if (users[username] && users[username] === password) {
+    if (users[username] && users[username].password === password) {
         loginMsg.textContent = '';
         showApp(username);
     } else {
@@ -140,33 +167,55 @@ loginForm.onsubmit = e => {
 signupForm.onsubmit = e => {
     e.preventDefault();
     const username = signupForm[0].value.trim();
-    const password = signupForm[1].value;
+    const email = signupForm[1].value.trim();
+    const password = signupForm[2].value;
     let users = getUsers();
     if (users[username]) {
         signupMsg.textContent = 'Username already exists.';
         return;
     }
-    users[username] = password;
+    // Email validation
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+        signupMsg.textContent = 'Please enter a valid email address.';
+        return;
+    }
+    users[username] = { password, email };
     setUsers(users);
     saveUserData(username, { periods: [], symptoms: {} });
     signupMsg.textContent = 'Account created! Please log in.';
 };
 logoutBtn.onclick = logout;
-// Auto-login if session exists (for demo, not secure)
 window.onload = () => {
     if (currentUser) showApp(currentUser);
 };
 // --- Calendar & Logging ---
 const calendarDiv = document.getElementById('calendar');
-const symptomForm = document.getElementById('symptom-form');
+let calendarMonth = new Date().getMonth();
+let calendarYear = new Date().getFullYear();
+const monthLabel = document.getElementById('calendar-month-label');
+document.getElementById('prev-month').onclick = () => {
+    calendarMonth--;
+    if (calendarMonth < 0) {
+        calendarMonth = 11;
+        calendarYear--;
+    }
+    renderCalendar();
+};
+document.getElementById('next-month').onclick = () => {
+    calendarMonth++;
+    if (calendarMonth > 11) {
+        calendarMonth = 0;
+        calendarYear++;
+    }
+    renderCalendar();
+};
 function getToday() {
     const d = new Date();
     return d.toISOString().slice(0, 10);
 }
 function renderCalendar() {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
+    const year = calendarYear;
+    const month = calendarMonth;
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const userData = getUserData(currentUser);
@@ -178,18 +227,26 @@ function renderCalendar() {
         html += `<div class='calendar-day${isPeriod ? ' period-day' : ''}' data-date='${dateStr}'>${d}</div>`;
     }
     html += `</div>`;
-    html += `<button id='log-period-btn'>Log Today as Period Day</button>`;
     calendarDiv.innerHTML = html;
-    document.getElementById('log-period-btn').onclick = () => {
-        const userData = getUserData(currentUser);
-        if (!userData.periods) userData.periods = [];
-        const today = getToday();
-        if (!userData.periods.includes(today)) userData.periods.push(today);
-        saveUserData(currentUser, userData);
-        renderCalendar();
-        renderDashboard();
-    };
+    monthLabel.textContent = `${firstDay.toLocaleString('default', { month: 'long' })} ${year}`;
+    // Add click listeners to days
+    document.querySelectorAll('.calendar-day').forEach(day => {
+        day.onclick = () => {
+            const date = day.getAttribute('data-date');
+            const userData = getUserData(currentUser);
+            if (!userData.periods) userData.periods = [];
+            if (userData.periods.includes(date)) {
+                userData.periods = userData.periods.filter(d => d !== date);
+            } else {
+                userData.periods.push(date);
+            }
+            saveUserData(currentUser, userData);
+            renderCalendar();
+            renderDashboard();
+        };
+    });
 }
+const symptomForm = document.getElementById('symptom-form');
 symptomForm.onsubmit = e => {
     e.preventDefault();
     const formData = new FormData(symptomForm);
@@ -235,7 +292,9 @@ function renderDashboard() {
         const ds = d.toISOString().slice(0,10);
         days.push(ds);
     }
-    const symptomTypes = ['cramps','mood','acne','fatigue','weight','irregular'];
+    const symptomTypes = [
+        'cramps','mood','acne','fatigue','weight','irregular','bloating','headache','breast','sleep','appetite','nausea','diarrhea','constipation','backpain','anxiety','depression','cravings','dizziness','hotflashes','nightsweats'
+    ];
     let chartHtml = `<div class='symptom-bar-chart'>`;
     for (let s of symptomTypes) {
         chartHtml += `<div class='symptom-bar-row'><span>${s}</span>`;
@@ -247,19 +306,33 @@ function renderDashboard() {
     chartHtml += `</div>`;
     symptomChartDiv.innerHTML = chartHtml;
 }
-// --- AI Symptom Checker (Demo) ---
+// --- AI Symptom Checker (Robust) ---
 document.getElementById('ai-analyze-btn').onclick = () => {
     const input = document.getElementById('ai-input').value;
     const responseDiv = document.getElementById('ai-response');
-    // Demo: simple keyword check for PCOD/PCOS
-    const keywords = ['irregular','weight','acne','hair','cycle','missed','late','pain','fatigue'];
-    let found = keywords.filter(k=>input.toLowerCase().includes(k));
+    // Enhanced: check for PCOD/PCOS patterns
+    const patterns = [
+        /irregular/i,
+        /weight.*gain|gain.*weight|weight.*loss|loss.*weight/i,
+        /acne/i,
+        /hair.*(growth|loss|thinning)/i,
+        /cycle.*(missed|late|absent|skipped)/i,
+        /missed.*period/i,
+        /pain.*(pelvic|ovary|lower abdomen)/i,
+        /fatigue/i,
+        /dark.*skin/i,
+        /sleep.*(problem|issue|disturb|insomnia)/i,
+        /anxiety|depression|mood/i,
+        /craving/i,
+        /bloating/i
+    ];
+    let found = patterns.filter(re=>re.test(input));
     if (found.length>=3) {
-        responseDiv.textContent = '⚠️ Your symptoms may be consistent with PCOD/PCOS. Please consult a healthcare provider for a full evaluation.';
+        responseDiv.innerHTML = '<span class="ai-alert">⚠️</span> <b>Your symptoms may be consistent with PCOD/PCOS.</b> Please consult a healthcare provider for a full evaluation.';
     } else if (found.length>0) {
-        responseDiv.textContent = 'Some symptoms noted. If you have concerns about PCOD/PCOS, consider tracking your symptoms and consulting a doctor.';
+        responseDiv.innerHTML = 'Some symptoms noted. If you have concerns about PCOD/PCOS, consider tracking your symptoms and consulting a doctor.';
     } else {
-        responseDiv.textContent = 'No major PCOD/PCOS indicators detected in your description.';
+        responseDiv.innerHTML = 'No major PCOD/PCOS indicators detected in your description.';
     }
 };
     </script>

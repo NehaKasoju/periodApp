@@ -17,13 +17,13 @@ body {
 }
 
 .container {
-    max-width: 800px;
-    width: 90%;
+    max-width: 850px;
+    width: 96%;
     margin-top: 20px;
     padding: 25px;
     background: var(--secondary-color);
-    border-radius: 15px;
-    box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    border-radius: 18px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.10);
 }
 
 header, footer {
@@ -31,21 +31,37 @@ header, footer {
     margin-bottom: 20px;
 }
 
-h1, h2 {
+h1 {
     color: var(--accent-color);
+    font-size: 2.1rem;
+    margin-bottom: 0.2em;
+}
+
+.subtitle {
+    color: var(--primary-color);
+    font-size: 1.1rem;
+    margin-top: 0;
+    margin-bottom: 0.5em;
+    font-weight: 500;
+}
+
+h2 {
+    color: var(--accent-color);
+    margin-bottom: 0.5em;
 }
 
 main {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 18px;
 }
 
 section {
-    padding: 15px;
-    border-radius: 10px;
+    padding: 18px 15px 15px 15px;
+    border-radius: 12px;
     background: #f9f9f9;
     margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(189,160,217,0.04);
 }
 
 /* Auth Forms */
@@ -124,6 +140,41 @@ section {
 }
 
 /* Calendar */
+.calendar-section {
+    background: #f7f3fa;
+    border: 1px solid #f3c4d9;
+}
+
+.calendar-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    margin-bottom: 8px;
+}
+
+.calendar-controls button {
+    background: var(--accent-color);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 16px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background 0.2s;
+}
+
+.calendar-controls button:hover {
+    background: var(--primary-color);
+}
+
+#calendar-month-label {
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 1.1em;
+}
+
 .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -138,52 +189,88 @@ section {
     text-align: center;
     color: #555;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background 0.2s, color 0.2s;
+    font-weight: 500;
+    border: 1px solid #f3c4d9;
 }
 
 .calendar-day.period-day {
     background: var(--primary-color);
     color: #fff;
-    font-weight: 600;
+    font-weight: 700;
+    border: 2px solid var(--accent-color);
+    box-shadow: 0 0 0 2px #fff;
 }
 
-#log-period-btn {
+.calendar-help {
+    font-size: 0.98em;
+    color: #888;
+    margin-top: 2px;
+    text-align: center;
+}
+
+/* Symptom Form */
+.symptom-section {
+    background: #f9f7fb;
+    border: 1px solid #bda0d9;
+}
+
+.symptom-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.symptom-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 8px 18px;
+    width: 100%;
+}
+
+.symptom-form label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 1em;
+    color: #3C8883;
+    background: #f3f0fa;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-weight: 500;
+}
+
+.symptom-form button {
+    margin-top: 10px;
     background: var(--accent-color);
     color: #fff;
     border: none;
     border-radius: 8px;
-    padding: 8px 18px;
+    padding: 10px 20px;
     font-weight: 600;
     cursor: pointer;
-    margin-top: 8px;
+    align-self: center;
 }
 
-/* Symptom Form */
-.symptom-form {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px 20px;
-    align-items: center;
-}
-
-.symptom-form label {
-    flex: 1 1 40%;
-    min-width: 120px;
-}
-
-.symptom-form button {
-    flex-basis: 100%;
-    margin-top: 10px;
+.symptom-help {
+    font-size: 0.98em;
+    color: #888;
+    margin-top: 2px;
+    text-align: center;
 }
 
 /* Dashboard */
 .dashboard-section {
     background: #f3f0fa;
+    border: 1px solid #bda0d9;
 }
 
 #cycle-summary {
     margin-bottom: 10px;
     font-size: 1.05em;
+    color: #3C8883;
+    font-weight: 500;
 }
 
 .symptom-bar-chart {
@@ -200,9 +287,10 @@ section {
 }
 
 .symptom-bar-row span:first-child {
-    width: 90px;
-    font-size: 0.95em;
+    width: 110px;
+    font-size: 0.97em;
     color: #3C8883;
+    font-weight: 500;
 }
 
 .symptom-bar {
@@ -221,6 +309,11 @@ section {
 }
 
 /* AI Section */
+.ai-section {
+    background: #f7f9fa;
+    border: 1px solid #3C8883;
+}
+
 .ai-section textarea {
     width: 100%;
     height: 80px;
@@ -229,6 +322,7 @@ section {
     border: 1px solid #ccc;
     resize: vertical;
     font-family: inherit;
+    font-size: 1em;
 }
 
 .ai-section button {
@@ -240,10 +334,21 @@ section {
     border-radius: 8px;
     cursor: pointer;
     transition: opacity 0.2s;
+    font-weight: 600;
 }
 
 .ai-section button:hover {
     opacity: 0.8;
+}
+
+.ai-badge {
+    background: var(--highlight-color);
+    color: var(--accent-color);
+    border-radius: 8px;
+    padding: 2px 10px;
+    font-size: 0.9em;
+    font-weight: 600;
+    margin-left: 6px;
 }
 
 .ai-response {
@@ -252,6 +357,20 @@ section {
     background: #e7f3f2;
     border-radius: 8px;
     color: #555;
+    font-size: 1.05em;
+}
+
+.ai-alert {
+    color: #c00;
+    font-size: 1.3em;
+    margin-right: 6px;
+}
+
+.ai-help {
+    font-size: 0.95em;
+    color: #888;
+    margin-top: 4px;
+    text-align: center;
 }
 
 footer p {
@@ -260,14 +379,29 @@ footer p {
 }
 
 /* Responsive design */
-@media (max-width: 600px) {
+@media (max-width: 700px) {
     .container {
-        padding: 10px;
+        padding: 7px;
     }
-    .symptom-form label {
-        min-width: 90px;
+    .symptom-grid {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     }
     .symptom-bar-row span:first-child {
-        width: 60px;
+        width: 70px;
+    }
+}
+
+@media (max-width: 500px) {
+    h1 {
+        font-size: 1.2rem;
+    }
+    .container {
+        padding: 2px;
+    }
+    .symptom-grid {
+        grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+    }
+    .symptom-bar-row span:first-child {
+        width: 40px;
     }
 }
